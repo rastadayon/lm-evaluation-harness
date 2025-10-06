@@ -1,0 +1,135 @@
+{
+  "results": {
+    "nutribench_v2_baseline": {
+      "alias": "nutribench_v2_baseline",
+      "mae,none": 23.049356875000093,
+      "mae_stderr,none": "N/A",
+      "ae,none": 23.049356875000093,
+      "ae_stderr,none": "N/A"
+    }
+  },
+  "group_subtasks": {
+    "nutribench_v2_baseline": []
+  },
+  "configs": {
+    "nutribench_v2_baseline": {
+      "task": "nutribench_v2_baseline",
+      "dataset_path": "parquet",
+      "dataset_kwargs": {
+        "data_files": {
+          "train": [
+            "hf://datasets/dongx1997/NutriBench/v2/train-00000-of-00001.parquet"
+          ]
+        }
+      },
+      "validation_split": "train",
+      "doc_to_text": "{% raw %}You are a nutrition assistant that estimates carbohydrates from meal descriptions. For the given query including a meal description, respond with the total carbohydrates in grams.}\nImportant:\n- Only use the numeric amount of carbohydrates in your response, without extra text.\n- Do **not** add extra text after the response.\n\nFollow the format of the following examples when answering-\n\nExample 1:\nQuery: \"This morning, I had a cup of oatmeal with half a sliced banana and a glass of orange juice.\"\n66.50\n\nExample 2:\nQuery: \"I ate scrambled eggs made with 2 eggs and a toast for breakfast.\"\n15.00\n\nExample 3:\nQuery: \"Half a peanut butter and jelly sandwich.\"\n25.30\n\nNow answer the following query:\n{% endraw %}Query: \"{{ meal_description }}\"\nAnswer:\n",
+      "doc_to_target": "{{ carb }}",
+      "unsafe_code": false,
+      "process_results": "def process_results(doc: Dict[str, Any], results: List[Any]) -> Dict[str, float]:\n    \"\"\"\n    Called by LM-Eval for each document after model generation.\n    - doc: processed dataset row\n    - results: list of outputs for the prompt\n    Returns a dict of metric -> value.\n    \"\"\"\n    prediction_text = results[0] if results else \"\"\n    pred_g = extract_carbs_from_answer(prediction_text)\n    true_g = float(doc[\"carb\"])\n\n    # Compute absolute error\n    if pred_g is None:\n        ae = float(\"nan\")\n    else:\n        ae = abs(pred_g - true_g)\n\n    return {\"mae\": ae, \"ae\": ae}\n",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "mae",
+          "aggregation": "def mean_ignore_nan(xs: Sequence[float]) -> float:\n    vals = _finite_vals(xs)\n    return float(sum(vals) / len(vals)) if vals else float(\"nan\")\n",
+          "stderr": "def stderr_ignore_nan(xs: Sequence[float]) -> float:\n    print(\"HELLOOOOOO\")\n    vals = np.array([np.nan if v is None else v for v in xs], dtype=float)\n    finite = np.isfinite(vals)\n    n = int(finite.sum())\n    if n <= 1:\n        return float(\"nan\") if n == 0 else 0.0\n    std = np.nanstd(vals, ddof=1)  # sample stddev\n    return float(std / np.sqrt(n))\n",
+          "higher_is_better": false
+        },
+        {
+          "metric": "ae",
+          "aggregation": "def mean_ignore_nan(xs: Sequence[float]) -> float:\n    vals = _finite_vals(xs)\n    return float(sum(vals) / len(vals)) if vals else float(\"nan\")\n",
+          "stderr": "def stderr_ignore_nan(xs: Sequence[float]) -> float:\n    print(\"HELLOOOOOO\")\n    vals = np.array([np.nan if v is None else v for v in xs], dtype=float)\n    finite = np.isfinite(vals)\n    n = int(finite.sum())\n    if n <= 1:\n        return float(\"nan\") if n == 0 else 0.0\n    std = np.nanstd(vals, ddof=1)  # sample stddev\n    return float(std / np.sqrt(n))\n",
+          "higher_is_better": false
+        },
+        {
+          "metric": "n_valid",
+          "aggregation": "def count_finite(xs: Sequence[float]) -> float:\n    # handy to see how many examples actually contributed\n    return float(len(_finite_vals(xs)))\n",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "generate_until",
+      "generation_kwargs": {
+        "max_gen_toks": 1024,
+        "until": [
+          "\n\n"
+        ]
+      },
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": {
+        "version": 1.0,
+        "tag": "nutrition"
+      }
+    }
+  },
+  "versions": {
+    "nutribench_v2_baseline": 1.0
+  },
+  "n-shot": {
+    "nutribench_v2_baseline": 0
+  },
+  "higher_is_better": {
+    "nutribench_v2_baseline": {
+      "mae": false,
+      "ae": false,
+      "n_valid": true
+    }
+  },
+  "n-samples": {
+    "nutribench_v2_baseline": {
+      "original": 15617,
+      "effective": 15617
+    }
+  },
+  "config": {
+    "model": "vllm",
+    "model_args": "pretrained=/data/qs4-data2/PPO-with-Confidence/models/Llama-3.1-8B-Instruct_sft_LR2e-05_BS2_E2_DF1.0_remove_cot,tensor_parallel_size=1,dtype=auto,gpu_memory_utilization=0.8,data_parallel_size=1",
+    "batch_size": "auto",
+    "batch_sizes": [],
+    "device": null,
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": null,
+    "random_seed": 42,
+    "numpy_seed": 42,
+    "torch_seed": 42,
+    "fewshot_seed": 42
+  },
+  "git_hash": "1c43de03",
+  "date": 1759790427.381469,
+  "pretty_env_info": "PyTorch version: 2.7.1+cu126\nIs debug build: False\nCUDA used to build PyTorch: 12.6\nROCM used to build PyTorch: N/A\n\nOS: Rocky Linux 9.4 (Blue Onyx) (x86_64)\nGCC version: (GCC) 11.4.1 20231218 (Red Hat 11.4.1-3)\nClang version: Could not collect\nCMake version: Could not collect\nLibc version: glibc-2.34\n\nPython version: 3.11.13 (main, Jun  5 2025, 13:12:00) [GCC 11.2.0] (64-bit runtime)\nPython platform: Linux-5.14.0-427.18.1.el9_4.x86_64-x86_64-with-glibc2.34\nIs CUDA available: True\nCUDA runtime version: Could not collect\nCUDA_MODULE_LOADING set to: LAZY\nGPU models and configuration: \nGPU 0: NVIDIA A100 80GB PCIe\nGPU 1: NVIDIA A100 80GB PCIe\nGPU 2: NVIDIA A100 80GB PCIe\nGPU 3: NVIDIA A100 80GB PCIe\nGPU 4: NVIDIA A100 80GB PCIe\nGPU 5: NVIDIA A100 80GB PCIe\nGPU 6: NVIDIA A100 80GB PCIe\nGPU 7: NVIDIA A100 80GB PCIe\n\nNvidia driver version: 555.42.02\ncuDNN version: Could not collect\nHIP runtime version: N/A\nMIOpen runtime version: N/A\nIs XNNPACK available: True\n\nCPU:\nArchitecture:                       x86_64\nCPU op-mode(s):                     32-bit, 64-bit\nAddress sizes:                      48 bits physical, 48 bits virtual\nByte Order:                         Little Endian\nCPU(s):                             256\nOn-line CPU(s) list:                0-254\nOff-line CPU(s) list:               255\nVendor ID:                          AuthenticAMD\nModel name:                         AMD EPYC 7763 64-Core Processor\nCPU family:                         25\nModel:                              1\nThread(s) per core:                 2\nCore(s) per socket:                 64\nSocket(s):                          2\nStepping:                           1\nFrequency boost:                    enabled\nCPU(s) scaling MHz:                 79%\nCPU max MHz:                        3529.0520\nCPU min MHz:                        0.0000\nBogoMIPS:                           4899.93\nFlags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd amd_ppin brs arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca debug_swap\nVirtualization:                     AMD-V\nL1d cache:                          4 MiB (128 instances)\nL1i cache:                          4 MiB (128 instances)\nL2 cache:                           64 MiB (128 instances)\nL3 cache:                           512 MiB (16 instances)\nNUMA node(s):                       2\nNUMA node0 CPU(s):                  0-63,128-191\nNUMA node1 CPU(s):                  64-127,192-254\nVulnerability Gather data sampling: Not affected\nVulnerability Itlb multihit:        Not affected\nVulnerability L1tf:                 Not affected\nVulnerability Mds:                  Not affected\nVulnerability Meltdown:             Not affected\nVulnerability Mmio stale data:      Not affected\nVulnerability Retbleed:             Not affected\nVulnerability Spec rstack overflow: Mitigation; Safe RET\nVulnerability Spec store bypass:    Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:           Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected\nVulnerability Srbds:                Not affected\nVulnerability Tsx async abort:      Not affected\n\nVersions of relevant libraries:\n[pip3] mypy==1.17.1\n[pip3] mypy_extensions==1.1.0\n[pip3] numpy==2.2.6\n[pip3] nvidia-cublas-cu12==12.6.4.1\n[pip3] nvidia-cuda-cupti-cu12==12.6.80\n[pip3] nvidia-cuda-nvrtc-cu12==12.6.77\n[pip3] nvidia-cuda-runtime-cu12==12.6.77\n[pip3] nvidia-cudnn-cu12==9.5.1.17\n[pip3] nvidia-cufft-cu12==11.3.0.4\n[pip3] nvidia-curand-cu12==10.3.7.77\n[pip3] nvidia-cusolver-cu12==11.7.1.2\n[pip3] nvidia-cusparse-cu12==12.5.4.2\n[pip3] nvidia-cusparselt-cu12==0.6.3\n[pip3] nvidia-nccl-cu12==2.26.2\n[pip3] nvidia-nvjitlink-cu12==12.6.85\n[pip3] nvidia-nvtx-cu12==12.6.77\n[pip3] torch==2.7.1\n[pip3] torchaudio==2.7.1\n[pip3] torchvision==0.22.1\n[pip3] triton==3.3.1\n[conda] numpy                                2.2.6            pypi_0           pypi\n[conda] nvidia-cublas-cu12                   12.6.4.1         pypi_0           pypi\n[conda] nvidia-cuda-cupti-cu12               12.6.80          pypi_0           pypi\n[conda] nvidia-cuda-nvrtc-cu12               12.6.77          pypi_0           pypi\n[conda] nvidia-cuda-runtime-cu12             12.6.77          pypi_0           pypi\n[conda] nvidia-cudnn-cu12                    9.5.1.17         pypi_0           pypi\n[conda] nvidia-cufft-cu12                    11.3.0.4         pypi_0           pypi\n[conda] nvidia-curand-cu12                   10.3.7.77        pypi_0           pypi\n[conda] nvidia-cusolver-cu12                 11.7.1.2         pypi_0           pypi\n[conda] nvidia-cusparse-cu12                 12.5.4.2         pypi_0           pypi\n[conda] nvidia-cusparselt-cu12               0.6.3            pypi_0           pypi\n[conda] nvidia-nccl-cu12                     2.26.2           pypi_0           pypi\n[conda] nvidia-nvjitlink-cu12                12.6.85          pypi_0           pypi\n[conda] nvidia-nvtx-cu12                     12.6.77          pypi_0           pypi\n[conda] torch                                2.7.1            pypi_0           pypi\n[conda] torchaudio                           2.7.1            pypi_0           pypi\n[conda] torchvision                          0.22.1           pypi_0           pypi\n[conda] triton                               3.3.1            pypi_0           pypi",
+  "transformers_version": "4.55.2",
+  "upper_git_hash": null,
+  "tokenizer_pad_token": [
+    "<|eot_id|>",
+    "128009"
+  ],
+  "tokenizer_eos_token": [
+    "<|eot_id|>",
+    "128009"
+  ],
+  "tokenizer_bos_token": [
+    "<|begin_of_text|>",
+    "128000"
+  ],
+  "eot_token_id": 128009,
+  "max_length": 131072,
+  "task_hashes": {
+    "nutribench_v2_baseline": "f4623febbd7a8847a1696c1717530fe7e1d5ca497e724564d19b53183057712c"
+  },
+  "model_source": "vllm",
+  "model_name": "/data/qs4-data2/PPO-with-Confidence/models/Llama-3.1-8B-Instruct_sft_LR2e-05_BS2_E2_DF1.0_remove_cot",
+  "model_name_sanitized": "__data__qs4-data2__PPO-with-Confidence__models__Llama-3.1-8B-Instruct_sft_LR2e-05_BS2_E2_DF1.0_remove_cot",
+  "system_instruction": null,
+  "system_instruction_sha": null,
+  "fewshot_as_multiturn": false,
+  "chat_template": "{{- bos_token }}\n{%- if custom_tools is defined %}\n    {%- set tools = custom_tools %}\n{%- endif %}\n{%- if not tools_in_user_message is defined %}\n    {%- set tools_in_user_message = true %}\n{%- endif %}\n{%- if not date_string is defined %}\n    {%- set date_string = \"26 Jul 2024\" %}\n{%- endif %}\n{%- if not tools is defined %}\n    {%- set tools = none %}\n{%- endif %}\n\n{#- This block extracts the system message, so we can slot it into the right place. #}\n{%- if messages[0]['role'] == 'system' %}\n    {%- set system_message = messages[0]['content']|trim %}\n    {%- set messages = messages[1:] %}\n{%- else %}\n    {%- set system_message = \"\" %}\n{%- endif %}\n\n{#- System message + builtin tools #}\n{{- \"<|start_header_id|>system<|end_header_id|>\\n\\n\" }}\n{%- if builtin_tools is defined or tools is not none %}\n    {{- \"Environment: ipython\\n\" }}\n{%- endif %}\n{%- if builtin_tools is defined %}\n    {{- \"Tools: \" + builtin_tools | reject('equalto', 'code_interpreter') | join(\", \") + \"\\n\\n\"}}\n{%- endif %}\n{{- \"Cutting Knowledge Date: December 2023\\n\" }}\n{{- \"Today Date: \" + date_string + \"\\n\\n\" }}\n{%- if tools is not none and not tools_in_user_message %}\n    {{- \"You have access to the following functions. To call a function, please respond with JSON for a function call.\" }}\n    {{- 'Respond in the format {\"name\": function name, \"parameters\": dictionary of argument name and its value}.' }}\n    {{- \"Do not use variables.\\n\\n\" }}\n    {%- for t in tools %}\n        {{- t | tojson(indent=4) }}\n        {{- \"\\n\\n\" }}\n    {%- endfor %}\n{%- endif %}\n{{- system_message }}\n{{- \"<|eot_id|>\" }}\n\n{#- Custom tools are passed in a user message with some extra guidance #}\n{%- if tools_in_user_message and not tools is none %}\n    {#- Extract the first user message so we can plug it in here #}\n    {%- if messages | length != 0 %}\n        {%- set first_user_message = messages[0]['content']|trim %}\n        {%- set messages = messages[1:] %}\n    {%- else %}\n        {{- raise_exception(\"Cannot put tools in the first user message when there's no first user message!\") }}\n{%- endif %}\n    {{- '<|start_header_id|>user<|end_header_id|>\\n\\n' -}}\n    {{- \"Given the following functions, please respond with a JSON for a function call \" }}\n    {{- \"with its proper arguments that best answers the given prompt.\\n\\n\" }}\n    {{- 'Respond in the format {\"name\": function name, \"parameters\": dictionary of argument name and its value}.' }}\n    {{- \"Do not use variables.\\n\\n\" }}\n    {%- for t in tools %}\n        {{- t | tojson(indent=4) }}\n        {{- \"\\n\\n\" }}\n    {%- endfor %}\n    {{- first_user_message + \"<|eot_id|>\"}}\n{%- endif %}\n\n{%- for message in messages %}\n    {%- if not (message.role == 'ipython' or message.role == 'tool' or 'tool_calls' in message) %}\n        {{- '<|start_header_id|>' + message['role'] + '<|end_header_id|>\\n\\n'+ message['content'] | trim + '<|eot_id|>' }}\n    {%- elif 'tool_calls' in message %}\n        {%- if not message.tool_calls|length == 1 %}\n            {{- raise_exception(\"This model only supports single tool-calls at once!\") }}\n        {%- endif %}\n        {%- set tool_call = message.tool_calls[0].function %}\n        {%- if builtin_tools is defined and tool_call.name in builtin_tools %}\n            {{- '<|start_header_id|>assistant<|end_header_id|>\\n\\n' -}}\n            {{- \"<|python_tag|>\" + tool_call.name + \".call(\" }}\n            {%- for arg_name, arg_val in tool_call.arguments | items %}\n                {{- arg_name + '=\"' + arg_val + '\"' }}\n                {%- if not loop.last %}\n                    {{- \", \" }}\n                {%- endif %}\n                {%- endfor %}\n            {{- \")\" }}\n        {%- else  %}\n            {{- '<|start_header_id|>assistant<|end_header_id|>\\n\\n' -}}\n            {{- '{\"name\": \"' + tool_call.name + '\", ' }}\n            {{- '\"parameters\": ' }}\n            {{- tool_call.arguments | tojson }}\n            {{- \"}\" }}\n        {%- endif %}\n        {%- if builtin_tools is defined %}\n            {#- This means we're in ipython mode #}\n            {{- \"<|eom_id|>\" }}\n        {%- else %}\n            {{- \"<|eot_id|>\" }}\n        {%- endif %}\n    {%- elif message.role == \"tool\" or message.role == \"ipython\" %}\n        {{- \"<|start_header_id|>ipython<|end_header_id|>\\n\\n\" }}\n        {%- if message.content is mapping or message.content is iterable %}\n            {{- message.content | tojson }}\n        {%- else %}\n            {{- message.content }}\n        {%- endif %}\n        {{- \"<|eot_id|>\" }}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|start_header_id|>assistant<|end_header_id|>\\n\\n' }}\n{%- endif %}\n",
+  "chat_template_sha": "e10ca381b1ccc5cf9db52e371f3b6651576caee0a630b452e2816b2d404d4b65",
+  "start_time": 42152029.476938576,
+  "end_time": 42152448.74753367,
+  "total_evaluation_time_seconds": "419.2705950960517"
+}
