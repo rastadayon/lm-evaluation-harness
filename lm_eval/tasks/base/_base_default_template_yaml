@@ -1,0 +1,54 @@
+dataset_path: dongx1997/NutriBench
+dataset_name: v2
+test_split: train
+output_type: generate_until
+
+description: |
+  {% raw %}You are a nutrition assistant that estimates carbohydrates from meal descriptions. For the given query including a meal description, respond with a dictionary object containing the total carbohydrates in grams as follows:
+  {"total_carbohydrates": total grams of carbohydrates for the serving}
+  Important:
+  - Only use the numeric amount of carbohydrates in the final dictionary, without extra text.
+  - Do **not** add extra text after the dictionary.
+
+  Follow the format of the following examples when answering-
+
+  Example 1:
+  Query: "This morning, I had a cup of oatmeal with half a sliced banana and a glass of orange juice."
+
+  Answer: {"total_carbohydrates": 66.5}
+
+  Example 2:
+  Query: "I ate scrambled eggs made with 2 eggs and a toast for breakfast."
+
+  Answer: {"total_carbohydrates": 15}
+
+  Example 3:
+  Query: "Half a peanut butter and jelly sandwich."
+
+  Answer: {"total_carbohydrates": 25.3}
+
+  Now answer the following query:
+  {% endraw %}
+
+
+doc_to_text:  !function utils.doc_to_text_base
+doc_to_target: "{{ carb }}"
+process_results: !function utils.process_results
+
+generation_kwargs:
+  until: []
+  do_sample: false
+  temperature: 0.0
+  max_gen_toks: 4096
+
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: mae
+    aggregation: !function utils.agg_mae
+    higher_is_better: true
+  
+  
+metadata:
+  version: 1.0

@@ -1,0 +1,66 @@
+# nutribench_v2_baseline.yaml
+task: nutribench_v2_baseline
+dataset_path: parquet
+dataset_name: null
+dataset_kwargs:
+  data_files:
+    train:
+      - "hf://datasets/dongx1997/NutriBench/v2/train-00000-of-00001.parquet"
+
+training_split: null
+validation_split: train
+test_split: null
+fewshot_split: null
+
+output_type: generate_until
+generation_kwargs:
+  max_gen_toks: 1024
+
+# Your JSON-dict style prompt, with the meal description inserted
+doc_to_text: |
+  {% raw %}You are a nutrition assistant that estimates carbohydrates from meal descriptions. For the given query including a meal description, respond with the total carbohydrates in grams.}
+  Important:
+  - Only use the numeric amount of carbohydrates in your response, without extra text.
+  - Do **not** add extra text after the response.
+
+  Follow the format of the following examples when answering-
+
+  Example 1:
+  Query: "This morning, I had a cup of oatmeal with half a sliced banana and a glass of orange juice."
+  66.50
+
+  Example 2:
+  Query: "I ate scrambled eggs made with 2 eggs and a toast for breakfast."
+  15.00
+
+  Example 3:
+  Query: "Half a peanut butter and jelly sandwich."
+  25.30
+
+  Now answer the following query:
+  {% endraw %}Query: "{{ meal_description }}"
+  Answer:
+
+# Pull the ground-truth directly from your 'carb' column
+doc_to_target: "{{ carb }}"
+
+# Parse prediction and compute AE/MAE
+process_results: !function utils.process_results
+
+metric_list:
+  - metric: mae
+    aggregation: !function utils.mean_ignore_nan
+    stderr:     !function utils.stderr_ignore_nan
+    higher_is_better: false
+  - metric: ae
+    aggregation: !function utils.mean_ignore_nan
+    stderr:     !function utils.stderr_ignore_nan
+    higher_is_better: false
+  - metric: n_valid
+    aggregation: !function utils.count_finite
+    higher_is_better: true
+
+
+metadata:
+  version: 1.0
+  tag: nutrition
