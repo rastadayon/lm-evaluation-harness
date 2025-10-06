@@ -1,3 +1,4 @@
+import logging
 import os
 from functools import cached_property
 from operator import itemgetter
@@ -6,15 +7,17 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from lm_eval.api.registry import register_model
 from lm_eval.models.api_models import TemplateAPI
 from lm_eval.models.utils import handle_stop_sequences
-from lm_eval.utils import eval_logger
+
+
+eval_logger = logging.getLogger(__name__)
 
 
 @register_model("local-completions")
 class LocalCompletionsAPI(TemplateAPI):
     def __init__(
         self,
-        base_url=None,
-        tokenizer_backend="huggingface",
+        base_url: str = None,
+        tokenizer_backend: str = "huggingface",
         **kwargs,
     ):
         super().__init__(
@@ -105,9 +108,9 @@ class LocalCompletionsAPI(TemplateAPI):
 class LocalChatCompletion(LocalCompletionsAPI):
     def __init__(
         self,
-        base_url=None,
-        tokenizer_backend=None,
-        tokenized_requests=False,
+        base_url: str = None,
+        tokenizer_backend: str = None,
+        tokenized_requests: bool = False,
         **kwargs,
     ):
         eval_logger.warning(
@@ -233,6 +236,7 @@ class OpenAIChatCompletion(LocalChatCompletion):
             eval_logger.warning(
                 "o1 models do not support `stop` and only support temperature=1"
             )
+
         super().__init__(
             base_url=base_url,
             tokenizer_backend=tokenizer_backend,
@@ -285,7 +289,9 @@ class OpenAIChatCompletion(LocalChatCompletion):
             "seed": seed,
             **gen_kwargs,
         }
-        if "o1" in self.model:
+        if "o1" in self.model or "5" in self.model:
             output.pop("stop")
             output["temperature"] = 1
+        elif "o3" in self.model:
+            output.pop("temperature")
         return output
