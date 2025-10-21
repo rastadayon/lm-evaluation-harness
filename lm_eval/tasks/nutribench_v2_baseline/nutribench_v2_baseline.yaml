@@ -27,15 +27,18 @@ doc_to_text: |
 
   Example 1:
   Query: "This morning, I had a cup of oatmeal with half a sliced banana and a glass of orange juice."
-  66.50
+  
+  Answer: {"total_carbohydrates": 66.50}
 
   Example 2:
   Query: "I ate scrambled eggs made with 2 eggs and a toast for breakfast."
-  15.00
+  
+  Answer: {"total_carbohydrates": 15.00}
 
   Example 3:
   Query: "Half a peanut butter and jelly sandwich."
-  25.30
+  
+  Answer: {"total_carbohydrates": 25.30}
 
   Now answer the following query:
   {% endraw %}Query: "{{ meal_description }}"
