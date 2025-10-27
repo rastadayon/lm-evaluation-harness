@@ -67,6 +67,8 @@ doc_to_text: |
   Query: "This morning, I had a cup of oatmeal with half a sliced banana and a glass of orange juice."
   
   Answer: {"total_carbohydrates": 66.50}
+  
+  Answer: {"total_carbohydrates": 66.50}
 
   Example 2:
   Query: "I ate scrambled eggs made with 2 eggs and a toast for breakfast."

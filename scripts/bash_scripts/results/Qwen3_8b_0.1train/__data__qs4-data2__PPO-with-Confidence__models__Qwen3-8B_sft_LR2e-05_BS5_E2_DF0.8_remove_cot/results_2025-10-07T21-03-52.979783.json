@@ -1,0 +1,142 @@
+{
+  "results": {
+    "nutribench_v2_baseline": {
+      "alias": "nutribench_v2_baseline",
+      "mae,none": 18.342739962860986,
+      "mae_stderr,none": "N/A",
+      "ae,none": 18.342739962860986,
+      "ae_stderr,none": "N/A"
+    }
+  },
+  "group_subtasks": {
+    "nutribench_v2_baseline": []
+  },
+  "configs": {
+    "nutribench_v2_baseline": {
+      "task": "nutribench_v2_baseline",
+      "dataset_path": "parquet",
+      "dataset_kwargs": {
+        "data_files": {
+          "train": [
+            "hf://datasets/dongx1997/NutriBench/v2/train-00000-of-00001.parquet"
+          ]
+        }
+      },
+      "validation_split": "train",
+      "doc_to_text": "{% raw %}You are a nutrition assistant that estimates carbohydrates from meal descriptions. For the given query including a meal description, respond with the total carbohydrates in grams.}\nImportant:\n- Only use the numeric amount of carbohydrates in your response, without extra text.\n- Do **not** add extra text after the response.\n\nFollow the format of the following examples when answering-\n\nExample 1:\nQuery: \"This morning, I had a cup of oatmeal with half a sliced banana and a glass of orange juice.\"\n66.50\n\nExample 2:\nQuery: \"I ate scrambled eggs made with 2 eggs and a toast for breakfast.\"\n15.00\n\nExample 3:\nQuery: \"Half a peanut butter and jelly sandwich.\"\n25.30\n\nNow answer the following query:\n{% endraw %}Query: \"{{ meal_description }}\"\nAnswer:\n",
+      "doc_to_target": "{{ carb }}",
+      "unsafe_code": false,
+      "process_results": "def process_results(doc: Dict[str, Any], results: List[Any]) -> Dict[str, float]:\n    \"\"\"\n    Called by LM-Eval for each document after model generation.\n    - doc: processed dataset row\n    - results: list of outputs for the prompt\n    Returns a dict of metric -> value.\n    \"\"\"\n    prediction_text = results[0] if results else \"\"\n    pred_g = extract_carbs_from_answer(prediction_text)\n    true_g = float(doc[\"carb\"])\n\n    # Compute absolute error\n    if pred_g is None:\n        ae = float(\"nan\")\n    else:\n        ae = abs(pred_g - true_g)\n\n    return {\"mae\": ae, \"ae\": ae}\n",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "mae",
+          "aggregation": "def mean_ignore_nan(xs: Sequence[float]) -> float:\n    vals = _finite_vals(xs)\n    return float(sum(vals) / len(vals)) if vals else float(\"nan\")\n",
+          "stderr": "def stderr_ignore_nan(xs: Sequence[float]) -> float:\n    print(\"HELLOOOOOO\")\n    vals = np.array([np.nan if v is None else v for v in xs], dtype=float)\n    finite = np.isfinite(vals)\n    n = int(finite.sum())\n    if n <= 1:\n        return float(\"nan\") if n == 0 else 0.0\n    std = np.nanstd(vals, ddof=1)  # sample stddev\n    return float(std / np.sqrt(n))\n",
+          "higher_is_better": false
+        },
+        {
+          "metric": "ae",
+          "aggregation": "def mean_ignore_nan(xs: Sequence[float]) -> float:\n    vals = _finite_vals(xs)\n    return float(sum(vals) / len(vals)) if vals else float(\"nan\")\n",
+          "stderr": "def stderr_ignore_nan(xs: Sequence[float]) -> float:\n    print(\"HELLOOOOOO\")\n    vals = np.array([np.nan if v is None else v for v in xs], dtype=float)\n    finite = np.isfinite(vals)\n    n = int(finite.sum())\n    if n <= 1:\n        return float(\"nan\") if n == 0 else 0.0\n    std = np.nanstd(vals, ddof=1)  # sample stddev\n    return float(std / np.sqrt(n))\n",
+          "higher_is_better": false
+        },
+        {
+          "metric": "n_valid",
+          "aggregation": "def count_finite(xs: Sequence[float]) -> float:\n    # handy to see how many examples actually contributed\n    return float(len(_finite_vals(xs)))\n",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "generate_until",
+      "generation_kwargs": {
+        "max_gen_toks": 1024,
+        "until": "None"
+      },
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": {
+        "version": 1.0,
+        "tag": "nutrition",
+        "pretrained": "/data/qs4-data2/PPO-with-Confidence/models/Qwen3-8B_sft_LR2e-05_BS5_E2_DF0.8_remove_cot",
+        "tensor_parallel_size": 1,
+        "dtype": "auto",
+        "gpu_memory_utilization": 0.8,
+        "data_parallel_size": 1
+      }
+    }
+  },
+  "versions": {
+    "nutribench_v2_baseline": 1.0
+  },
+  "n-shot": {
+    "nutribench_v2_baseline": 0
+  },
+  "higher_is_better": {
+    "nutribench_v2_baseline": {
+      "mae": false,
+      "ae": false,
+      "n_valid": true
+    }
+  },
+  "n-samples": {
+    "nutribench_v2_baseline": {
+      "original": 15617,
+      "effective": 15617
+    }
+  },
+  "config": {
+    "model": "vllm",
+    "model_args": "pretrained=/data/qs4-data2/PPO-with-Confidence/models/Qwen3-8B_sft_LR2e-05_BS5_E2_DF0.8_remove_cot,tensor_parallel_size=1,dtype=auto,gpu_memory_utilization=0.8,data_parallel_size=1",
+    "batch_size": "auto",
+    "batch_sizes": [],
+    "device": null,
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": {
+      "max_gen_toks": 1024,
+      "until": "None"
+    },
+    "random_seed": 42,
+    "numpy_seed": 42,
+    "torch_seed": 42,
+    "fewshot_seed": 42
+  },
+  "git_hash": "edad1c3e",
+  "date": 1759870890.2425065,
+  "pretty_env_info": "PyTorch version: 2.8.0+cu126\nIs debug build: False\nCUDA used to build PyTorch: 12.6\nROCM used to build PyTorch: N/A\n\nOS: Ubuntu 22.04.2 LTS (x86_64)\nGCC version: (Ubuntu 11.4.0-1ubuntu1~22.04.2) 11.4.0\nClang version: Could not collect\nCMake version: Could not collect\nLibc version: glibc-2.35\n\nPython version: 3.13.2 | packaged by Anaconda, Inc. | (main, Feb  6 2025, 18:56:02) [GCC 11.2.0] (64-bit runtime)\nPython platform: Linux-5.15.0-153-generic-x86_64-with-glibc2.35\nIs CUDA available: True\nCUDA runtime version: 11.5.119\nCUDA_MODULE_LOADING set to: LAZY\nGPU models and configuration: \nGPU 0: NVIDIA A100 80GB PCIe\nGPU 1: NVIDIA A100 80GB PCIe\nGPU 2: NVIDIA A100 80GB PCIe\nGPU 3: NVIDIA A100 80GB PCIe\nGPU 4: NVIDIA A100 80GB PCIe\nGPU 5: NVIDIA A100 80GB PCIe\nGPU 6: NVIDIA A100 80GB PCIe\nGPU 7: NVIDIA A100 80GB PCIe\nGPU 8: NVIDIA A100 80GB PCIe\nGPU 9: NVIDIA A100 80GB PCIe\n\nNvidia driver version: 565.57.01\ncuDNN version: Could not collect\nHIP runtime version: N/A\nMIOpen runtime version: N/A\nIs XNNPACK available: True\n\nCPU:\nArchitecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           46 bits physical, 57 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  64\nOn-line CPU(s) list:                     0-63\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) Silver 4314 CPU @ 2.40GHz\nCPU family:                              6\nModel:                                   106\nThread(s) per core:                      2\nCore(s) per socket:                      16\nSocket(s):                               2\nStepping:                                6\nCPU max MHz:                             3400.0000\nCPU min MHz:                             800.0000\nBogoMIPS:                                4800.00\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 invpcid_single intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq la57 rdpid fsrm md_clear pconfig flush_l1d arch_capabilities\nVirtualization:                          VT-x\nL1d cache:                               1.5 MiB (32 instances)\nL1i cache:                               1 MiB (32 instances)\nL2 cache:                                40 MiB (32 instances)\nL3 cache:                                48 MiB (2 instances)\nNUMA node(s):                            4\nNUMA node0 CPU(s):                       0-7,32-39\nNUMA node1 CPU(s):                       8-15,40-47\nNUMA node2 CPU(s):                       16-23,48-55\nNUMA node3 CPU(s):                       24-31,56-63\nVulnerability Gather data sampling:      Mitigation; Microcode\nVulnerability Indirect target selection: Mitigation; Aligned branch/return thunks\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Mitigation; Clear CPU buffers; SMT vulnerable\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl and seccomp\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB disabled; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop\nVulnerability Srbds:                     Not affected\nVulnerability Tsx async abort:           Not affected\n\nVersions of relevant libraries:\n[pip3] numpy==2.2.5\n[pip3] nvidia-cublas-cu12==12.6.4.1\n[pip3] nvidia-cuda-cupti-cu12==12.6.80\n[pip3] nvidia-cuda-nvrtc-cu12==12.6.77\n[pip3] nvidia-cuda-runtime-cu12==12.6.77\n[pip3] nvidia-cudnn-cu12==9.10.2.21\n[pip3] nvidia-cufft-cu12==11.3.0.4\n[pip3] nvidia-curand-cu12==10.3.7.77\n[pip3] nvidia-cusolver-cu12==11.7.1.2\n[pip3] nvidia-cusparse-cu12==12.5.4.2\n[pip3] nvidia-cusparselt-cu12==0.7.1\n[pip3] nvidia-nccl-cu12==2.27.3\n[pip3] nvidia-nvjitlink-cu12==12.6.85\n[pip3] nvidia-nvtx-cu12==12.6.77\n[pip3] torch==2.8.0+cu126\n[pip3] torchaudio==2.8.0\n[pip3] torchvision==0.23.0+cu126\n[pip3] triton==3.4.0\n[conda] numpy                     2.2.5                    pypi_0    pypi\n[conda] nvidia-cublas-cu12        12.6.4.1                 pypi_0    pypi\n[conda] nvidia-cuda-cupti-cu12    12.6.80                  pypi_0    pypi\n[conda] nvidia-cuda-nvrtc-cu12    12.6.77                  pypi_0    pypi\n[conda] nvidia-cuda-runtime-cu12  12.6.77                  pypi_0    pypi\n[conda] nvidia-cudnn-cu12         9.10.2.21                pypi_0    pypi\n[conda] nvidia-cufft-cu12         11.3.0.4                 pypi_0    pypi\n[conda] nvidia-curand-cu12        10.3.7.77                pypi_0    pypi\n[conda] nvidia-cusolver-cu12      11.7.1.2                 pypi_0    pypi\n[conda] nvidia-cusparse-cu12      12.5.4.2                 pypi_0    pypi\n[conda] nvidia-cusparselt-cu12    0.7.1                    pypi_0    pypi\n[conda] nvidia-nccl-cu12          2.27.3                   pypi_0    pypi\n[conda] nvidia-nvjitlink-cu12     12.6.85                  pypi_0    pypi\n[conda] nvidia-nvtx-cu12          12.6.77                  pypi_0    pypi\n[conda] torch                     2.8.0+cu126              pypi_0    pypi\n[conda] torchaudio                2.8.0                    pypi_0    pypi\n[conda] torchvision               0.23.0+cu126             pypi_0    pypi\n[conda] triton                    3.4.0                    pypi_0    pypi",
+  "transformers_version": "4.57.0",
+  "lm_eval_version": "0.4.9.1",
+  "upper_git_hash": null,
+  "tokenizer_pad_token": [
+    "<|endoftext|>",
+    "151643"
+  ],
+  "tokenizer_eos_token": [
+    "<|im_end|>",
+    "151645"
+  ],
+  "tokenizer_bos_token": [
+    null,
+    "None"
+  ],
+  "eot_token_id": 151645,
+  "max_length": 40960,
+  "task_hashes": {
+    "nutribench_v2_baseline": "516db2f80de88803014b4fcca2fe33d955f7a35ae222afd13e14bdb5e81e0910"
+  },
+  "model_source": "vllm",
+  "model_name": "/data/qs4-data2/PPO-with-Confidence/models/Qwen3-8B_sft_LR2e-05_BS5_E2_DF0.8_remove_cot",
+  "model_name_sanitized": "__data__qs4-data2__PPO-with-Confidence__models__Qwen3-8B_sft_LR2e-05_BS5_E2_DF0.8_remove_cot",
+  "system_instruction": null,
+  "system_instruction_sha": null,
+  "fewshot_as_multiturn": false,
+  "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and message.content is string and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if message.content is string %}\n        {%- set content = message.content %}\n    {%- else %}\n        {%- set content = '' %}\n    {%- endif %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is string %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in content %}\n                {%- set reasoning_content = content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n                {%- set content = content.split('</think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+  "chat_template_sha": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8",
+  "start_time": 2826901.496941789,
+  "end_time": 2827047.713699301,
+  "total_evaluation_time_seconds": "146.21675751172006"
+}
