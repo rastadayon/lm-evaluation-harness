@@ -45,3 +45,7 @@ examples/wandb/
 
 # PyInstaller
 *.spec
+
+
+# Large files
+results/
